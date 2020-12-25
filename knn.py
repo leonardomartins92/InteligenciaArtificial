@@ -7,13 +7,19 @@ Created on Fri Dec 18 14:02:49 2020
 
 import pandas as pd
 
-base = pd.read_csv('alunos_gret.csv')
-base = base.fillna(method='ffill')
+
+base = pd.read_csv('microdados-matriculas.csv')
+base = base.dropna()
+
+
 ##Dummys
 
-base_dummy = pd.get_dummies(base, columns=['CategoriadeSituacao','Sexo','RendaFamiliar','CorRaca','FaixaEtaria','Turno','Regiao'])
+base_dummy = pd.get_dummies(base, columns=['CategoriadeSituacao','Regiao','Sexo','RendaFamiliar','CorRaca','Turno'])
+base_dummy = base_dummy.drop(columns=['Regiao_Região Centro-Oeste','CorRaca_Indígena','Sexo_F','RendaFamiliar_0<RFP<=0,5','CategoriadeSituacao_Evadidos','Turno_Matutino'])
+
+
 classe = base_dummy.iloc[:, 4]
-base_dummy = base_dummy.drop(columns=['CategoriadeSituacao_Evadidos'])
+base_dummy = base_dummy.drop(columns=['CategoriadeSituacao_Concluintes'])
 variavel = base_dummy.iloc[:, 0:]
 
 #Normalização
@@ -36,10 +42,5 @@ knn.fit(X_train, y_train)
 result = knn.predict(X_train)
 
 from sklearn.metrics import confusion_matrix
-cm1 = confusion_matrix(y_train,result)
+cm = confusion_matrix(y_train,result)
 
-from sklearn.model_selection import GridSearchCV
-k_list = list(range(1,31))
-parametros = dict(n_neighbors=k_list)
-grid = GridSearchCV(knn, variavel, cv=5, scoring='accuracy')
-grid.fit(variavel, classe)

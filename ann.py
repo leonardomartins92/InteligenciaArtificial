@@ -1,16 +1,19 @@
 
 import pandas as pd
-import tensorflow
 
-base = pd.read_csv('alunos_gret.csv')
-base = base.fillna(method='ffill')
+
+base = pd.read_csv('microdados-matriculas.csv')
+base = base.dropna()
+
 
 ##Dummys
 
-base_dummy = pd.get_dummies(base, columns=['CategoriadeSituacao','Sexo','RendaFamiliar','CorRaca','FaixaEtaria','Turno','Regiao'])
-base_dummy = base_dummy.drop(columns=['Sexo_F','RendaFamiliar_0<RFP<=0.5','CorRaca_Indigena','FaixaEtaria_15 a 19 anos','CategoriadeSituacao_Concluintes','Turno_Nao se aplica','Regiao_Regiao Centro-Oeste'])
+base_dummy = pd.get_dummies(base, columns=['CategoriadeSituacao','Regiao','Sexo','RendaFamiliar','CorRaca','Turno'])
+base_dummy = base_dummy.drop(columns=['Regiao_Região Centro-Oeste','CorRaca_Indígena','Sexo_F','RendaFamiliar_0<RFP<=0,5','CategoriadeSituacao_Evadidos','Turno_Matutino'])
+
+
 classe = base_dummy.iloc[:, 4]
-base_dummy = base_dummy.drop(columns=['CategoriadeSituacao_Evadidos'])
+base_dummy = base_dummy.drop(columns=['CategoriadeSituacao_Concluintes'])
 variavel = base_dummy.iloc[:, 0:]
                     
 #Separando em grupo de teste e de treinamento
@@ -21,20 +24,24 @@ x_train, x_test, y_train, y_test = train_test_split(variavel, classe, test_size=
 # Arrumando Escala
 from sklearn.preprocessing import StandardScaler
 sc = StandardScaler()
-x_train_standard = sc.fit_transform(x_train)
+x_train = sc.fit_transform(x_train)
 x_test = sc.fit_transform(x_test)
 
 #RNN
-import keras
 from keras.models import Sequential
 from keras.layers import Dense
+from keras.layers import Dropout
 
 classifier = Sequential()
 
 #INPUT LAYER
 #primeiro valor = (variaveis+classe)/2 
-classifier.add(Dense(16, kernel_initializer='glorot_uniform', activation = 'relu', input_dim = 31)) 
-classifier.add(Dense(16, kernel_initializer='glorot_uniform', activation = 'relu')) 
+
+classifier.add(Dense(11, kernel_initializer='glorot_uniform', activation = 'relu', input_dim = 22)) 
+classifier.add(Dropout(0.05))
+
+classifier.add(Dense(11, kernel_initializer='glorot_uniform', activation = 'relu')) 
+classifier.add(Dropout(0.05))
 
 #OUTPUT LAYER
 #como a saida tem 1 variavel categoria, o primeiro numero é 1 e a activação é sigmoid.
@@ -42,14 +49,35 @@ classifier.add(Dense(16, kernel_initializer='glorot_uniform', activation = 'relu
 classifier.add(Dense(1, kernel_initializer='glorot_uniform', activation = 'sigmoid')) 
 
 #COMPILAR 
-classifier.compile(optimizer ='adam', loss='binary_crossentropy',metrics = ['accuracy'])
+classifier.compile(optimizer ='rmsprop', loss='binary_crossentropy',metrics = ['accuracy'])
 
-#TREINO
-classifier.fit(x_train, y_train, batch_size = 10, epochs = 100)
-
+classifier.fit(x_train, y_train, batch_size = 50, epochs = 50)
 #TESTE
 y_pred = classifier.predict(x_test)
-y_pred = (y_pred > 0.5)
+y_pred2 = (y_pred > 0.50)
 
 from sklearn.metrics import confusion_matrix
-cm = confusion_matrix(y_test, y_pred)
+cm = confusion_matrix(y_test, y_pred2)
+
+
+#K-FOLD CROSS VALIDATION
+
+from keras.wrappers.scikit_learn import KerasClassifier
+from sklearn.model_selection import cross_val_score
+from keras.models import Sequential
+from keras.layers import Dense
+
+def build_classifier():
+    classifier = Sequential()
+    classifier.add(Dense(11, kernel_initializer='glorot_uniform', activation = 'relu', input_dim = 22)) 
+    classifier.add(Dense(11, kernel_initializer='glorot_uniform', activation = 'relu')) 
+    classifier.add(Dense(1, kernel_initializer='glorot_uniform', activation = 'sigmoid')) 
+    classifier.compile(optimizer ='adam', loss='binary_crossentropy',metrics = ['accuracy'])
+    return classifier
+
+classifier = KerasClassifier(build_fn = build_classifier, batch_size = 50, epochs = 50)
+accuracies = cross_val_score(estimator = classifier, X = x_train, y = y_train, cv = 10, n_jobs = -1)    
+mean = accuracies.mean()
+variance = accuracies.std()
+
+
