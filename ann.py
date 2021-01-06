@@ -2,7 +2,7 @@
 import pandas as pd
 
 
-base = pd.read_csv('microdados-matriculas.csv')
+base = pd.read_csv('dataset/microdados-matriculas.csv')
 base = base.dropna()
 
 
