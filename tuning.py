@@ -8,7 +8,7 @@ Created on Tue Dec 22 21:49:24 2020
 import pandas as pd
 
 
-df = pd.read_csv('microdados-matriculas.csv')
+df = pd.read_csv('dataset/CSV/microdados-matriculas.csv')
 df = df.dropna()
 
 

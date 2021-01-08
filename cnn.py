@@ -15,7 +15,7 @@ from keras.layers import Dense
 
 classifier = Sequential()
 #Layer 1
-classifier.add(Convolution2D(32, 3, 3, input_shape= (64, 64, 3), activation='relu'))
+classifier.add(Convolution2D(32, 3, 3, input_shape= (64, 64, 3), activation='relu')) #128, 128 have better results
 classifier.add(MaxPooling2D(pool_size=(2, 2)))
 
 #Layer 2
@@ -39,13 +39,13 @@ train_datagen = ImageDataGenerator(
 test_datagen = ImageDataGenerator(rescale=1./255)
 
 training_set = train_datagen.flow_from_directory(
-        'dataset/training_set',
+        'dataset/Images/training_set',
         target_size=(64, 64), #same size as input_shape
         batch_size=32,
         class_mode='binary')
 
 test_set = test_datagen.flow_from_directory(
-        'dataset/test_set',
+        'dataset/Images/test_set',
         target_size=(64, 64),
         batch_size=32,
         class_mode='binary')
